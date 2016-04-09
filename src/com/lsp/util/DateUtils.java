@@ -11,6 +11,24 @@ import java.util.Date;
  *
  */
 public class DateUtils {
+    private static String defaultDatePattern = null;  
+    private static String timePattern = "HH:mm";  
+    private static Calendar cale = Calendar.getInstance();  
+    /** 日期格式yyyy-MM字符串常量 */  
+    private static final String MONTH_FORMAT = "yyyy-MM";  
+    /** 日期格式yyyy-MM-dd字符串常量 */  
+    private static final String DATE_FORMAT = "yyyy-MM-dd";  
+    /** 日期格式HH:mm:ss字符串常量 */  
+    private static final String HOUR_FORMAT = "HH:mm:ss";  
+    /** 日期格式yyyy-MM-dd HH:mm:ss字符串常量 */  
+    private static final String DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";  
+    /** 某天开始时分秒字符串常量  00:00:00 */  
+    private static final String DAY_BEGIN_STRING_HHMMSS = " 00:00:00";  
+    /**  某天结束时分秒字符串常量  23:59:59  */  
+    public static final String DAY_END_STRING_HHMMSS = " 23:59:59";  
+    private static SimpleDateFormat sdf_date_format = new SimpleDateFormat(DATE_FORMAT);  
+    private static SimpleDateFormat sdf_hour_format = new SimpleDateFormat(HOUR_FORMAT);  
+    private static SimpleDateFormat sdf_datetime_format = new SimpleDateFormat(DATETIME_FORMAT); 
 	/**
 	 * 将str根据format格式转化成时间
 	 * @param str
@@ -137,6 +155,80 @@ public class DateUtils {
 		return sb.toString();
 	}
 	
+	
+	
+	/**
+	 *  获得  两个日期之间的天数
+	 * @param startDate 开始日期
+	 * @param endDate  结束日期
+	 * @return
+	 */
+	public static Long getDaysBetween(Date startDate, Date endDate) {
+		Calendar startCalendar = Calendar.getInstance();
+		startCalendar.setTime(startDate);
+		startCalendar.set(Calendar.HOUR_OF_DAY, 0);
+		startCalendar.set(Calendar.MINUTE, 0);
+		startCalendar.set(Calendar.SECOND, 0);
+		startCalendar.set(Calendar.MILLISECOND, 0);
+
+		Calendar endCalendar = Calendar.getInstance();
+		endCalendar.setTime(endDate);
+		endCalendar.set(Calendar.HOUR_OF_DAY, 0);
+		endCalendar.set(Calendar.MINUTE, 0);
+		endCalendar.set(Calendar.SECOND, 0);
+		endCalendar.set(Calendar.MILLISECOND, 0);
+
+		return (endCalendar.getTime().getTime() - startCalendar.getTime().getTime()) / (1000 * 60 * 60 * 24);
+	}
+	
+	/**
+	 * 获得服务器当前日期及时间，以格式为：yyyy-MM-dd HH:mm:ss的日期字符串形式返回
+	 * @return
+	 */
+	public static String getDateTime() {  
+        try {  
+            return sdf_datetime_format.format(cale.getTime());  
+        } catch (Exception e) {  
+            e.printStackTrace();
+            return "";  
+        }  
+    }  
+	
+	/**
+	 *  字符串 转date 
+	 * @param str 字符串
+	 * @param format 要转化的格式
+	 * @return
+	 */
+	public static Date stringToDate(String str,String format){
+		if(str==null||"".equals(str)){
+			return null;
+		}
+		SimpleDateFormat sdf=new SimpleDateFormat(format);
+		try{
+			return sdf.parse(str);
+		}catch(Exception e){
+			e.printStackTrace();
+			return null;
+		}
+	}
+	/**
+	 * 日期转字符串
+	 * @param date 日期对象
+	 * @param format 要转化的格式
+	 * @return
+	 */
+	public static String dateToString(Date date,String format){
+		if(date==null){
+			return "";
+		}
+		SimpleDateFormat sdf=new SimpleDateFormat(format);
+		try{
+			return sdf.format(date);
+		}catch(Exception e){
+			return "";
+		}
+	}
 	
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub

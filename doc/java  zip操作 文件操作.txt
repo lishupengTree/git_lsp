@@ -1,0 +1,108 @@
+/**
+*  下载文件 
+*/
+File downfile = new File("c:" + File.separator + "日报" + File.separator + "up" +File.separator+ basHospitals.getHosname()+basHospitals.getNodecode()+File.separator +export_date+".rar");
+//response.reset();
+response.setContentType("application/x-msdownload;charset=gbk");    //设置response
+response.setCharacterEncoding("UTF-8");
+String disname = basHospitals.getHosname()+"-日报导出-"+export_date+".rar";
+response.setHeader("Content-Disposition", "attachment; filename="+ URLEncoder.encode(disname, "UTF-8"));
+OutputStream out = response.getOutputStream();
+FileInputStream inputStream = new FileInputStream(downfile);
+byte[] content = new byte[1024];
+int length = 0;
+while ((length = inputStream.read(content)) != -1) {  //边读边输出
+	out.write(content, 0, length);
+}
+inputStream.close();  
+out.flush(); 
+out.close();  
+inputStream.close();
+
+//相关的zip的包
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import org.apache.tools.zip.ZipEntry;  
+import org.apache.tools.zip.ZipOutputStream; 
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.model.ZipParameters;
+import net.lingala.zip4j.util.Zip4jConstants;
+// 添加到压缩包 并设置密码。
+ZipFile zipFile = new ZipFile("c:" + File.separator + "日报" + File.separator + "up" +File.separator+ basHospitals.getHosname()+basHospitals.getNodecode()+File.separator +export_date+".rar");
+ArrayList<File> filesToAdd = new ArrayList<File>();
+filesToAdd.add(file_crb);
+filesToAdd.add(file_jrmx);
+filesToAdd.add(file_outpbill);
+filesToAdd.add(file_szrb);
+filesToAdd.add(file_xls);
+ZipParameters parameters = new ZipParameters();
+parameters.setCompressionMethod(Zip4jConstants.COMP_DEFLATE);
+parameters.setCompressionLevel(Zip4jConstants.DEFLATE_LEVEL_NORMAL);
+parameters.setEncryptFiles(true);
+parameters.setEncryptionMethod(Zip4jConstants.ENC_METHOD_AES);
+parameters.setAesKeyStrength(Zip4jConstants.AES_STRENGTH_256);
+parameters.setPassword(mima);
+zipFile.addFiles(filesToAdd, parameters);
+System.out.println("加密压缩成功。");
+
+
+//定时器示例代码
+new Timer().schedule(new TimerTask() {
+	public void run() {
+		// 删除 .dbf文件
+
+		File file = new File("c:" + File.separator + "日报"
+				+ File.separator + "up" + File.separator + fileNameUrl);// 里面输入特定目录
+		File temp = null;
+		File[] filelist = file.listFiles();
+		for (int i = 0; i < filelist.length; i++) {
+			temp = filelist[i];
+			if (temp.getName().endsWith(".dbf")) { // 删除目录中以特定后缀结尾的文件
+				temp.delete();// 删除文件
+				System.out.println("删除文件" + temp.getName());
+			}
+		}
+		// 如果只要这个延迟一次，用cancel方法取消掉．
+		this.cancel();
+	}
+}, 10000);
+
+
+//DBF 文件导出代码
+System.out.println("开始写入门诊收费 日报--");
+sql = "select to_char(i.chgdate, 'yyyy/mm/dd hh24:mi:ss') sheetdate, decode(d.invoiceitem, '01', 'A', '02', 'B', '08', 'C', '07', 'D', '09', 'E', '10', 'F', '14', 'I', '05', 'J', '12', 'K', 'M') invoiceitem, d.chgtype, nvl(x.medname,d.itemname) itemname, (x.spec || '/' || x.mafname) guige, d.qty, d.unit, d.amt, bp.idno, d.unitprice, d.patientid, p.unitnam_code code, p.unitname, nvl(d.medcode,d.itemcode) itemcode, i.invoiceid invoiceno, d.dtmainid, p.patname, p.identity, i.instype from chg_details d left join (select a.medname,a.medcode, a.mafname, b.spec from med_main a, med_spec b where a.speccode = b.speccode) x on x.medcode = nvl(d.medcode,d.itemcode) join chg_invoice i on i.invoiceid = d.invoiceid and i.clcorinp = '门诊' and i.hosnum=d.hosnum left join bas_patient_ids bp on bp.patientid = d.patientid and bp.idtype = '军人保障卡' left join bas_patients p on p.patientid = d.patientid where d.hosnum = '"+basHospitals.getHosnum()+"' and d.sheetward is null and to_char(i.chgdate, 'yyyy-mm-dd') = '"+tt_query+"'";
+list=db.find(sql);
+File file_outpbill = new File("c:" + File.separator + "日报" + File.separator + "up" + 
+		File.separator +basHospitals.getHosname()+basHospitals.getNodecode()
+		+ File.separator+ "outpbill-"+export_date+".dbf");
+if(!file_outpbill.exists()){
+	file_outpbill.createNewFile();
+}else {
+	file_outpbill.delete();
+	file_outpbill.createNewFile();
+}
+String[] strutName_outpbill={"采集日期","类别代码","项目类别","项目名称","项目规格",
+		"数量","单位","应收费用","实收费用","帐号",
+		"单价","门诊号","单位代码","单位名称","项目代码",
+		"收据号","标识号","姓名","身份","费别"};   //DBF文件的列名最多支持10个字符  不能超过5个汉字。
+fields = new DBFField[20];
+for (int i = 0; i < strutName_outpbill.length; i++) {  
+	fields[i] = new DBFField();  
+	fields[i].setName(strutName_outpbill[i]);  
+	fields[i].setDataType(DBFField.FIELD_TYPE_C);  // 字符串
+	fields[i].setFieldLength(30);  
+}  
+writer = new DBFWriter(); 
+writer.setFields(fields);
+writer.setCharactersetName("GBK");
+for (int i = 0; i < list.size(); i++) {
+	writer.addRecord(new Object[]{
+			sheetdate,invoiceitem,chgtype,itemname,guige,
+			qty,unit,amt,amt,zhanghao,unitprice,patientid,code,unitname,
+			itemcode,invoiceno,dtmainid,patname,identity,instype});
+	fos = new FileOutputStream(file_outpbill); 
+	writer.write(fos); 
+	fos.close();
+}
+System.out.println("end门诊收费 日报--");
